@@ -2,14 +2,10 @@ const express = require('express');
 
 const CryptoJS = require("crypto-js");
 const jwt = require('jsonwebtoken');
-var SHA256 = require("crypto-js/sha256");
-var MD5 = require("crypto-js/md5");
 
 const server = express();
 server.use(express.json());
 const db = require("./db");
-
-
 function isPhoneCorrect(phone) {
     const splittedPhone = phone.split('');
     const begging = `${splittedPhone[0]}${splittedPhone[1]}${splittedPhone[2]}${splittedPhone[3]}${splittedPhone[4]}${splittedPhone[5]}${splittedPhone[6]}${splittedPhone[7]}${splittedPhone[8]}`
@@ -28,9 +24,49 @@ function isPhoneCorrect(phone) {
         return false
 }
 
+function decodeSession(tokenString) {
+    try {
+        return jwt.verify(tokenString, 'SECRET');
+    } catch (_error) {
+      const e = _error;
+      if (e.message.indexOf("Unexpected token") === 0) {
+        return "sessão inválida!";
+      }
+      if (e) {
+        return "sessão expirada!";
+      }
+      return "token inválido!";
+    }
+  }
+
+async function requireJwtMiddleware(req, res, next) {
+    const headerToken = req.header("X-JWT-Token");
+    try {
+       const conn = await db.connect();
+       if (!headerToken) return "Token obrigatório";
+  
+        const decodedToken = decodeSession(headerToken);
+        
+        if(!decodedToken) return "Ocorreu um erro na autenticação"
+        
+        const [rows] = await conn.query(`select * from users where email='${decodedToken.authenticatedUser.email}';`);
+
+        if(rows.length < 1) return "Ocorreu um erro na autenticação";
+        
+        return true;
+    } catch (error) {
+        console.log(error);
+        return "Erro de autenticação";
+    }
+  }
+
 server.get('/contato/:id', (req, res) => {
-    const {id} = req.params;     
+    const {id} = req.params;  
+    
     (async () => {
+        const response = await requireJwtMiddleware(req); 
+        if (response !== true) return res.status(400).json({response});
+    
         try {
             const conn = await db.connect();
             const [rows] = await conn.query(`select nome, celular from contacts where id = ${id};`);
@@ -47,6 +83,8 @@ server.get('/contato/:id', (req, res) => {
 
 server.get('/contatos', (req, res) => {
     (async () => {
+        const response = await requireJwtMiddleware(req); 
+        if (response !== true) return res.status(400).json({response});
         try {
             const conn = await db.connect();
             const [rows] = await conn.query(`select nome, celular from contacts`); 
@@ -65,6 +103,8 @@ server.get('/contatos', (req, res) => {
 server.post('/contato', (req, res) => {
     const contatos = req.body;
     (async () => {
+        const response = await requireJwtMiddleware(req); 
+        if (response !== true) return res.status(400).json({response});
         try {
             contatos.map(async (contato) => {
                 const isPhoneCorrectConst = isPhoneCorrect(contato.phone);
@@ -89,6 +129,8 @@ server.put('/contato/:id', (req, res) => {
     const {name, phone} = req.body;
 
     (async () => {
+        const response = await requireJwtMiddleware(req); 
+        if (response !== true) return res.status(400).json({response});
         try {
             if (name !== name.toUpperCase()) 
             return res.status(400).json({message: 'Somente letras maiusculas devem ser utilizadas no nome'})
@@ -110,6 +152,8 @@ server.put('/contato/:id', (req, res) => {
 server.delete('/contato/:id', (req, res) => {
     const {id} = req.params;
     (async () => {
+        const response = await requireJwtMiddleware(req); 
+        if (response !== true) return res.status(400).json({response});
         try {            
             const conn = await db.connect();
             const [rows] = await conn.query(`select * from contacts where id=${id};`);
@@ -149,5 +193,6 @@ server.post('/auth', (req, res) => {
     })();
 })
 
-
-server.listen(3000);
+server.listen(3000, ()=> { 
+    console.log('Server is up on port', 3000)
+});
