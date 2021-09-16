@@ -34,13 +34,13 @@ server.get('/contato/:id', (req, res) => {
         try {
             const conn = await db.connect();
             const [rows] = await conn.query(`select nome, celular from contacts where id = ${id};`);
-            if(rows.length < 1) res.json({message: "Nenhum contato encontrato"});
+            if(rows.length < 1) res.status(404).json({message: "Nenhum contato encontrato"});
             
             const resultArray = Object.values(JSON.parse(JSON.stringify(rows)))
             return res.status(200).json(resultArray[0]);
         } catch (error) {
             console.log(error);
-            res.status(400).json({message:  "Ocorreu um erro ao buscar contato"});
+            res.status(500).json({message:  "Ocorreu um erro ao buscar contato"});
         }
     })();
 })
@@ -51,13 +51,13 @@ server.get('/contatos', (req, res) => {
             const conn = await db.connect();
             const [rows] = await conn.query(`select nome, celular from contacts`); 
 
-            if(rows.length < 1) res.json({message: "Nenhum contato encontrato"});
+            if(rows.length < 1) res.status(404).json({message: "Nenhum contato encontrato"});
 
             const resultArray = Object.values(JSON.parse(JSON.stringify(rows)))
             return res.status(200).json(resultArray);
         } catch (error) {
             console.log(error);
-            res.status(400).json({message:  "Ocorreu um erro ao buscar contatos"});
+            res.status(500).json({message:  "Ocorreu um erro ao buscar contatos"});
         }
     })();
 })
@@ -68,10 +68,10 @@ server.post('/contato', (req, res) => {
         try {
             contatos.map(async (contato) => {
                 const isPhoneCorrectConst = isPhoneCorrect(contato.phone);
-                if (isPhoneCorrectConst == false) res.json({message: `O telefone ${contato.phone} não esta no formato +55 (41) 93030-6905`})
+                if (isPhoneCorrectConst == false) res.status(400).json({message: `O telefone ${contato.phone} não esta no formato +55 (41) 93030-6905`})
                 
                 if (contato.name !== contato.name.toUpperCase()) 
-                return res.json({message: `Somente letras maiusculas devem ser utilizadas no nome ${contato.name}`})
+                return res.status(400).json({message: `Somente letras maiusculas devem ser utilizadas no nome ${contato.name}`})
                 
                 const conn = await db.connect();
                 await conn.query(`insert into contacts (nome, celular) values ('${contato.name}', '${contato.phone}');`); 
@@ -79,7 +79,7 @@ server.post('/contato', (req, res) => {
             })
         } catch (error) {
             console.log(error);
-            res.status(400).json({message: "Ocorreu um erro ao cadastrar contatos"});
+            res.status(500).json({message: "Ocorreu um erro ao cadastrar contatos"});
         }
     })();
 })
@@ -91,18 +91,18 @@ server.put('/contato/:id', (req, res) => {
     (async () => {
         try {
             if (name !== name.toUpperCase()) 
-            return res.json({message: 'Somente letras maiusculas devem ser utilizadas no nome'})
+            return res.status(400).json({message: 'Somente letras maiusculas devem ser utilizadas no nome'})
         
             const conn = await db.connect();
             
             const [rows] = await conn.query(`select * from contacts where id=${id};`);
-            if(rows.length < 1) return res.json({message: "Usuário não encontrado"});
+            if(rows.length < 1) return res.status(404).json({message: "Usuário não encontrado"});
 
             await conn.query(`UPDATE contacts SET nome = '${name}', celular = '${phone}' WHERE id=${id};`); 
             return res.status(200).json({message: "Usuário atualizado com sucesso"});
             } catch (error) {
                 console.log(error);
-                res.status(400).json({message:  "Ocorreu um erro ao atualizar contatos"});
+                res.status(500).json({message:  "Ocorreu um erro ao atualizar contatos"});
         }
     })();
 })
@@ -113,13 +113,13 @@ server.delete('/contato/:id', (req, res) => {
         try {            
             const conn = await db.connect();
             const [rows] = await conn.query(`select * from contacts where id=${id};`);
-            if(rows.length < 1) return res.json({message: "Usuário não encontrado"});
+            if(rows.length < 1) return res.status(404).json({message: "Usuário não encontrado"});
     
-            await conn.query(`delete from contacts where id=${id};`); 
+            await conn.query(`delete from contacts where id=${id};`);
             return res.status(200).json({message: "Usuário deletado com sucesso"});
         } catch (error) {
             console.log(error);
-            res.status(400).json({message: "Ocorreu um erro ao deletar contatos"});
+            res.status(500).json({message: "Ocorreu um erro ao deletar contatos"});
         }
     })();
 })
@@ -131,7 +131,7 @@ server.post('/auth', (req, res) => {
             const conn = await db.connect();
             const [rows] = await conn.query(`select * from users where email='${email}';`);
 
-            if(rows.length < 1) return res.json({message: "Usuário não encontrado"});
+            if(rows.length < 1) return res.status(400).json({message: "Credenciais inválidas"});
             const users = Object.values(JSON.parse(JSON.stringify(rows)))
 
             const encryptedPassword = CryptoJS.MD5(password);
@@ -144,7 +144,7 @@ server.post('/auth', (req, res) => {
             return res.status(200).json(token);
            } catch (error) {
             console.error(error)
-            return res.status(401).json({message: "Ocorreu um erro na autenticação"});
+            return res.status(500).json({message: "Ocorreu um erro na autenticação"});
           }
     })();
 })
