@@ -5,14 +5,11 @@ const jwt = require('jsonwebtoken');
 function decodeSession(tokenString) {
     try {
         return jwt.verify(tokenString, 'SECRET');
-    } catch (_error) {
-      const e = _error;
-      if (e.message.indexOf("Unexpected token") === 0) {
-        return "sessão inválida!";
-      }
-      if (e) {
-        return "sessão expirada!";
-      }
+    } catch (error) {
+      if (error.message.indexOf("Unexpected token") === 0) return "sessão inválida!";
+
+      if (error) return "sessão expirada!";
+
       return "token inválido!";
     }
   }
@@ -25,8 +22,7 @@ module.exports = async function(req) {
   
         const decodedToken = decodeSession(headerToken);
         
-        if(!decodedToken.authenticatedUser.email) return "Ocorreu um erro na autenticação"
-        
+        if(!decodedToken.authenticatedUser.email) return decodedToken
         const [rows] = await conn.query(`select * from users where email='${decodedToken.authenticatedUser.email}';`);
 
         if(rows.length < 1) return "Ocorreu um erro na autenticação";

@@ -23,7 +23,7 @@ server.get('/contato/:id', (req, res) => {
             const [rows] = await conn.query(`select nome, celular from contacts where id = ${id};`);
             if(rows.length < 1) res.status(404).json({message: 'Nenhum contato encontrato'});
             
-            const resultArray = Object.values(JSON.parse(JSON.stringify(rows)))
+            const resultArray = JSON.parse(JSON.stringify(rows))
             return res.status(200).json(resultArray[0]);
         } catch (error) {
             console.log(error);
@@ -42,7 +42,7 @@ server.get('/contatos', (req, res) => {
 
             if(rows.length < 1) res.status(404).json({message: 'Nenhum contato encontrato'});
 
-            const resultArray = Object.values(JSON.parse(JSON.stringify(rows)))
+            const resultArray = JSON.parse(JSON.stringify(rows))
             return res.status(200).json(resultArray);
         } catch (error) {
             console.log(error);
@@ -129,7 +129,7 @@ server.post('/auth', (req, res) => {
             const [rows] = await conn.query(`select * from users where email='${email}';`);
 
             if(rows.length < 1) return res.status(400).json({message: 'Credenciais inválidas'});
-            const users = Object.values(JSON.parse(JSON.stringify(rows)))
+            const users = JSON.parse(JSON.stringify(rows))
 
             const encryptedPassword = CryptoJS.MD5(password);
             if (users[0].senha !== encryptedPassword.toString()) return res.status(401).json({message: 'Ocorreu um erro na autenticação'});
