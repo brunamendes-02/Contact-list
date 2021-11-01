@@ -59,7 +59,7 @@ server.post('/contato', (req, res) => {
         try {
             contatos.map(async (contato) => {
                 const isPhoneCorrectConst = isPhoneCorrect(contato.phone);
-                if (!isPhoneCorrectConst) return res.status(400).json({message: `O telefone ${contato.phone} não esta no formato +55 (41) 93030-6905`})
+                if (!isPhoneCorrectConst) return res.status(400).json({message: `O telefone ${contato.phone} não esta no formato correto (xx) xxxxx-xxxx`})
                 
                 if (contato.name !== contato.name.toUpperCase()) 
                 return res.status(400).json({message: `Somente letras maiusculas devem ser utilizadas no nome ${contato.name}`})
