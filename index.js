@@ -85,7 +85,9 @@ server.put('/contato/:id', (req, res) => {
         try {
             if (name !== name.toUpperCase()) 
             return res.status(400).json({message: 'Somente letras maiusculas devem ser utilizadas no nome'})
-        
+            const isPhoneCorrectConst = isPhoneCorrect(phone);
+            if (!isPhoneCorrectConst) return res.status(400).json({message: `O telefone ${phone} não esta no formato correto (xx) xxxxx-xxxx`})
+            
             const conn = await db.connect();
             
             const [rows] = await conn.query(`select * from contacts where id=${id};`);
